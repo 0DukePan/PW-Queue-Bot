@@ -4,7 +4,7 @@
   "description": "Discord bot for managing a practical-work queue.",
   "main": "bot.js",
   "scripts": {
-    "start": "node --env-file=.env bot.js"
+    "start": "node bot.js"
   },
   "engines": {
     "node": ">=20.6.0"
