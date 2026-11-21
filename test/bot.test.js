@@ -160,3 +160,43 @@ test('stop() sur un bot jamais démarré ne plante pas', async () => {
 
   cleanup();
 });
+
+test('stop() préserve l’identifiant du panneau pour le redémarrage suivant', async () => {
+  // Régression : `stop()` appelait `board.retire()` avant `persistence.close()`.
+  // Or `retire()` fait `detach()` (board -> null), donc l'état sauvegardé
+  // contenait `board: null` et le panneau n'était jamais restauré.
+  const { config, dir, cleanup } = tempConfig();
+  const bot = createBot({ config, logger: silentLogger });
+
+  // On simule un panneau actif sans réseau.
+  const fakeMessage = { id: 'msg42', channelId: 'chan42', url: 'https://discord.test/msg42' };
+  bot.board.adopt(fakeMessage);
+  assert.deepEqual(bot.board.board, { channelId: 'chan42', messageId: 'msg42' });
+
+  await bot.stop('test');
+
+  const saved = JSON.parse(fs.readFileSync(config.dataFile, 'utf8'));
+  assert.ok(saved.board, 'l’état sauvegardé doit contenir le panneau');
+  assert.equal(saved.board.messageId, 'msg42');
+  assert.equal(saved.board.channelId, 'chan42');
+
+  cleanup();
+  void dir;
+});
+
+test('un redémarrage retrouve le panneau sauvegardé', async () => {
+  const { config, cleanup } = tempConfig();
+
+  const first = createBot({ config, logger: silentLogger });
+  first.board.adopt({ id: 'msgAbc', channelId: 'chanAbc', url: 'https://discord.test/m' });
+  await first.stop('redémarrage');
+
+  // Nouveau démarrage : l'état doit contenir le panneau.
+  const second = createBot({ config, logger: silentLogger });
+  const persisted = second.persistence.load();
+
+  assert.equal(persisted.board.messageId, 'msgAbc');
+  assert.equal(persisted.board.channelId, 'chanAbc');
+
+  cleanup();
+});

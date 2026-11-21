@@ -179,12 +179,21 @@ function createBot({ config, logger }) {
   /** Arrêt propre : dernière édition du panneau puis sauvegarde. */
   async function stop(reason = 'shutdown') {
     logger.info('Arrêt du bot…', { reason });
+
+    // 1. Persister AVANT de toucher au panneau. `board.retire()` appelle
+    //    `detach()` qui remet `board` à null : sauvegarder après reviendrait
+    //    à oublier le panneau, donc à ne pas pouvoir le restaurer au
+    //    redémarrage suivant.
+    await persistence.close();
+
+    // 2. Neutraliser le panneau pour que les boutons ne pointent plus vers
+    //    une file morte.
     try {
       await board.retire('Bot arrêté — panneau inactif');
     } catch {
       // Un panneau déjà supprimé n'est pas un problème.
     }
-    await persistence.close();
+
     board.dispose();
     health?.close();
     client?.destroy();
