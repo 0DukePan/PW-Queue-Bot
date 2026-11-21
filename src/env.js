@@ -153,6 +153,13 @@ function createConfig(env = process.env) {
     /** L'intent privilégié GuildMembers est nécessaire pour `guildMemberAdd`. */
     enableMemberIntent: readBool('ENABLE_MEMBER_INTENT', true),
 
+    /**
+     * Serveur utilisé par `scripts/verify-live.js`.
+     * Volontairement séparé du reste : le script refuse de deviner sur quel
+     * serveur travailler, pour ne jamais créer de salon par accident.
+     */
+    guildIdForVerify: readString('GUILD_ID', ''),
+
     /** Port du serveur de health-check (Railway le fournit). */
     port: readInt('PORT', 0, { min: 0, max: 65_535 }),
 

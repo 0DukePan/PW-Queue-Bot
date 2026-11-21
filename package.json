@@ -10,6 +10,7 @@
     "test:watch": "node --test --watch test/*.test.js",
     "stress": "node scripts/stress-test.js",
     "stress:legacy": "node scripts/stress-test-legacy.js",
+    "verify:live": "node scripts/verify-live.js",
     "bench": "node scripts/bench.js"
   },
   "engines": {

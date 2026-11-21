@@ -204,6 +204,43 @@ Résultat sur 50 inscriptions simultanées :
 | Échecs | 42 (24 × 429, 18 × embed trop long) | **0** |
 | Éditions du panneau | 50 (une par clic) | **1** |
 
+## Vérification en conditions réelles
+
+Les tests ci-dessus tournent sur un faux client : ils prouvent l'absence de
+perte et le respect du budget de requêtes, **pas** la latence de production.
+`scripts/verify-live.js` comble ce trou en parlant au vrai Discord.
+
+Il se connecte, crée un **salon temporaire**, publie un panneau, provoque de
+vraies éditions, puis supprime tout ce qu'il a créé.
+
+```sh
+# 1. Renseigne .env (jamais commité) :
+#    DISCORD_TOKEN=...
+#    DISCORD_CLIENT_ID=...
+#    GUILD_ID=...          <- serveur de TEST uniquement
+
+node scripts/verify-live.js --dry-run     # valide token, serveur, permissions
+node scripts/verify-live.js --yes         # vérification complète
+node scripts/verify-live.js --interactive # clics manuels dans Discord
+```
+
+Ce qu'il mesure réellement :
+
+- la connexion au gateway et l'accès au serveur ;
+- les permissions nécessaires (Gérer les salons, Envoyer des messages) ;
+- la création du salon, la publication et l'édition du panneau ;
+- les **vrais 429**, comptés via `client.rest.on(RESTEvents.RateLimited)` ;
+- la validité de l'embed relu **depuis Discord** (`channel.messages.fetch`) ;
+- un contrôle local confirmant que le code d'origine aurait cassé.
+
+Garde-fous : refus de tourner sans `GUILD_ID` explicite (aucune devinette sur
+le serveur cible), salon temporaire, suppression systématique, et `--dry-run`
+pour tout valider sans rien écrire.
+
+**Limite honnête :** le script ne peut pas fabriquer de token d'interaction, donc
+il ne simule pas un *clic* d'utilisateur. Le mode `--interactive` laisse ce
+dernier maillon à un vrai clic humain.
+
 ## Déploiement
 
 Le fichier `Procfile` déclare `web: node bot.js` pour Railway. Sur les
