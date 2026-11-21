@@ -163,14 +163,46 @@ recherches de doublon : ~4× de gain à 30 inscrits, ~23× à 500, ~176× à 100
 ## Tests et mesures
 
 ```sh
-npm test        # 40 tests, aucun réseau requis
+npm test        # 49 tests, aucun réseau requis (dont les tests de charge)
 npm run bench   # ancienne vs nouvelle implémentation
+npm run stress  # scénario de charge 50 étudiants, en standalone
 ```
 
 Les tests couvrent le modèle de file (doublons, ordre FIFO/prioritaire,
 sérialisation, état corrompu), le rendu (limites de Discord, troncature) et le
 gestionnaire d'interactions avec un faux client Discord : rafale d'inscriptions,
 bascule `update`/`deferReply`, panneau obsolète, erreurs métier.
+
+### Tests de charge
+
+`test/stress.test.js` rejoue le scénario qui compte : **50 à 120 étudiants qui
+s'inscrivent en parallèle**, avec une latence réseau de 80–250 ms et la vraie
+limite Discord de **5 éditions / 5 s** par salon. Critères vérifiés :
+
+- les 50 inscriptions sont enregistrées ;
+- chaque clic reçoit une réponse **en moins de 3 s** (durée de vie du token) ;
+- **aucun 429** ;
+- le panneau est édité **≤ 3 fois** au lieu de 50.
+
+`test/stress-legacy.test.js` joue le même scénario sur le code d'origine et
+vérifie qu'il **échoue bien**. C'est le point clé : sans ce pendant négatif, un
+test qui passe ne prouverait rien (il pourrait ne rien mesurer). Il fige aussi
+le seuil réel de la limite Discord, pour que les chiffres du README ne
+deviennent pas faux en silence si une dépendance change.
+
+```sh
+npm run stress          # scénario de charge, en standalone
+npm run stress:legacy   # le même sur le code d'origine (doit échouer)
+```
+
+Résultat sur 50 inscriptions simultanées :
+
+| | Code d'origine | Version actuelle |
+| --- | --- | --- |
+| Étudiants enregistrés | 50 / 50 | 50 / 50 |
+| Clics aboutis | **8 / 50** | **50 / 50** |
+| Échecs | 42 (24 × 429, 18 × embed trop long) | **0** |
+| Éditions du panneau | 50 (une par clic) | **1** |
 
 ## Déploiement
 

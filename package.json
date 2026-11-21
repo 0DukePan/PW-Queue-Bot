@@ -8,6 +8,8 @@
     "deploy:commands": "node scripts/deploy-commands.js",
     "test": "node --test test/*.test.js",
     "test:watch": "node --test --watch test/*.test.js",
+    "stress": "node scripts/stress-test.js",
+    "stress:legacy": "node scripts/stress-test-legacy.js",
     "bench": "node scripts/bench.js"
   },
   "engines": {
