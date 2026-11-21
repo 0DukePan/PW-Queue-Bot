@@ -156,9 +156,15 @@ async function main() {
   // --- 2. Connexion ------------------------------------------------------
   step('Connexion à Discord');
 
-  const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
-  });
+  const intents = [GatewayIntentBits.Guilds];
+  // L'intent GuildMembers est privilégié : s'il n'est pas activé sur
+  // l'application, Discord refuse la connexion ("Used disallowed intents").
+  // On ne le demande donc que si la config l'autorise explicitement.
+  if (config.enableMemberIntent && config.enableWelcome) {
+    intents.push(GatewayIntentBits.GuildMembers);
+  }
+
+  const client = new Client({ intents });
 
   // Compteur de 429 réels remontés par la couche REST de discord.js.
   client.rest.on(RESTEvents.RateLimited, (info) => {
@@ -276,7 +282,9 @@ async function main() {
     await rl.question('\n  Entrée quand tu as terminé… ');
     rl.close();
 
-    const finalMessage = await channel.messages.fetch(published.id);
+    // `force: true` est indispensable : sans lui discord.js renvoie le
+    // message en cache, qui peut dater d'avant les éditions du bot.
+    const finalMessage = await channel.messages.fetch({ message: published.id, force: true });
     const embed = finalMessage.embeds[0];
     const fifoField = embed?.fields?.[2];
 
@@ -330,7 +338,8 @@ async function main() {
   // --- 8. Vérification du message réel -----------------------------------
   step('Relecture du message publié sur Discord');
 
-  const fetched = await channel.messages.fetch(published.id);
+  // `force: true` : on veut l'état réel côté Discord, pas le cache local.
+  const fetched = await channel.messages.fetch({ message: published.id, force: true });
   const embed = fetched.embeds[0];
   const json = embed?.toJSON();
   const fifo = json?.fields?.find((field) => field.name.includes('FIFO'));
