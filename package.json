@@ -1,10 +1,14 @@
 {
   "name": "pqb",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Discord bot for managing a practical-work queue.",
   "main": "bot.js",
   "scripts": {
-    "start": "node bot.js"
+    "start": "node bot.js",
+    "deploy:commands": "node scripts/deploy-commands.js",
+    "test": "node --test test/*.test.js",
+    "test:watch": "node --test --watch test/*.test.js",
+    "bench": "node scripts/bench.js"
   },
   "engines": {
     "node": ">=20.6.0"
